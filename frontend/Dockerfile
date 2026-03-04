@@ -1,4 +1,5 @@
-FROM node:16-alpine
+FROM node:22-alpine
+
 
 WORKDIR /frontend
 
@@ -14,4 +15,4 @@ RUN npm install axios
 EXPOSE 5173
 
 
-CMD [ "npm", "run", "dev" ]
+CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "5173", "--strictPort"]
