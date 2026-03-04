@@ -1,8 +1,12 @@
 services:
   api:
+    container_name : api
     build:
+      
+
       context: ./backend
       dockerfile: Dockerfile
+    image: api-image:v1
     command: ["python", "main.py"]
     ports:
       - "8000:8000"
@@ -10,9 +14,12 @@ services:
       - api_network
 
   frontend:
+    container_name : frontend
     build:
+      
       context: ./frontend
       dockerfile: Dockerfile
+    image: frontend-image:v1
     command: ["npm", "run" , "dev"]
     ports:
       - "5173:5173"
