@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "main.py"]
+    ports:
+      - "8000:8000"
+    networks:
+      - api_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["npm", "run" , "dev"]
+    ports:
+      - "5173:5173"
+    networks:
+      - api_network
+    depends_on:
+      - api
+
+
+networks:
+  api_network:
+    driver: bridge
