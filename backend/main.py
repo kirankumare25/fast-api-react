@@ -1,8 +1,23 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import json
+import os
+import redis.asyncio as redis
+
+
 
 app = FastAPI()
+
+# redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0, decode_responses=True) #vs code redis pool
+redis_pool = redis.ConnectionPool(host="redis", port=6379, db=0, decode_responses=True) # docker container redis pool
+
+async def get_redis_data():
+    try:
+        client =redis.Redis(connection_pool=redis_pool)
+        yield client
+    finally:
+        await client.close()
 
 
 origins = ["*"]
@@ -15,42 +30,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-users = {
-  "users": [
-    {
-      "id": 1,
-      "username": "emilys",
-      "email": "emilys@example.com",
-      "first_name": "Emily",
-      "last_name": "Smith",
-      "age": 25,
-      "active": True
-    },
-    {
-      "id": 2,
-      "username": "michaelj",
-      "email": "michaelj@example.com",
-      "first_name": "Michael",
-      "last_name": "Johnson",
-      "age": 30,
-      "active": True
-    },
-    {
-      "id": 3,
-      "username": "sarah_c",
-      "email": "sarah_c@example.com",
-      "first_name": "Sarah",
-      "last_name": "Connor",
-      "age": 40,
-      "active": False
-    }
-  ]
-}
+users = []
+
+WORKDIR = os.getcwd()
+FILE = os.path.join(WORKDIR + "/database.json") #docker file path
+# FILE = os.path.join(WORKDIR + "/backend/database.json") #vs code file path
+
+with open(FILE, "r") as file:
+    data = json.load(file)
+    users = data
 
 
 @app.get('/')
 def home():
     return {"message": "Hellow from Fast API"}
+
+@app.get("/getdetails")
+async def get_from_redis(id : int, cache : redis.Redis = Depends(get_redis_data)):
+    cache_data = await cache.get(f"{id}")
+    if cache_data:
+        data = json.loads(cache_data)
+        data["source"] = "from redis"
+        return data
+    else:
+        for user in users:
+            if user["id"] == id:
+                await cache.set(f"{id}", json.dumps(user), ex=60)
+                user["source"] = "from database"
+                return user
+    
 
 @app.get('/user/details')
 def user_details():
@@ -59,15 +67,22 @@ def user_details():
 
 @app.get('/user/details/{user_id}')
 def user_details_id(user_id : int):
-    for user in users["users"]:
-        if user_id == user["id"]:
+    for user in users:
+        if user["id"] == user_id:
             return user
-    
+        
     return {"message": f"{user_id} doesn't exist"}
+
+@app.get('/search')
+def search_user(name : str):
+    for user in users:
+        if user["first_name"].lower() == name.lower():
+            return user
+    return {"message" : f"{name.capitalize()} has not found on database"} 
     
 @app.delete('/user/delete/{user_id}')
 def delete_user(user_id : int):
-    for user in users["users"]:
+    for user in users:
         if user_id == user["id"]:
             users["users"].remove(user)
             return {"message": "user has deleted"}

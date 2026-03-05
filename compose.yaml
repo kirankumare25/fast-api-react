@@ -18,7 +18,7 @@ services:
     build:
       
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile  
     image: frontend-image:v1
     command: ["npm", "run" , "dev"]
     ports:
@@ -27,8 +27,20 @@ services:
       - api_network
     depends_on:
       - api
+  redis:
+    container_name : redis
+    image: redis:7-alpine
+    restart : always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    networks:
+      - api_network
 
 
+volumes:
+  redis-data:
+    driver: local
 networks:
   api_network:
     driver: bridge
