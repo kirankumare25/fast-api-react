@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import json
@@ -51,13 +51,15 @@ async def get_from_redis(id : int, cache : redis.Redis = Depends(get_redis_data)
     if cache_data:
         data = json.loads(cache_data)
         data["source"] = "from redis"
-        return data
+        jdata = json.dumps(data, indent=4)
+        return Response(content=jdata, media_type="application/json")
     else:
         for user in users:
             if user["id"] == id:
                 await cache.set(f"{id}", json.dumps(user), ex=60)
                 user["source"] = "from database"
-                return user
+                jdata = json.dumps(user, indent=4)
+                return Response(content=jdata, media_type="application/json")
     
 
 @app.get('/user/details')
