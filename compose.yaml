@@ -1,9 +1,28 @@
 services:
+
+  db:
+    container_name: postgres
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret12345
+      - POSTGRES_DB=my_datbase_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d labrat_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart : always
+    networks:
+      - api_network
+
   api:
     container_name : api
     build:
-      
-
       context: ./backend
       dockerfile: Dockerfile
     image: api-image:v1
@@ -16,7 +35,6 @@ services:
   frontend:
     container_name : frontend
     build:
-      
       context: ./frontend
       dockerfile: Dockerfile  
     image: frontend-image:v1
@@ -29,17 +47,23 @@ services:
       - api
   redis:
     container_name : redis
-    image: redis:7-alpine
+    image: redis:latest
     restart : always
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
     networks:
       - api_network
 
 
 volumes:
+  postgres-data:
+    name : postgres_db
+    driver : local
   redis-data:
+    name : redis_volume
     driver: local
 networks:
   api_network:

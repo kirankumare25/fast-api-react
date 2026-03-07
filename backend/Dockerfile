@@ -4,7 +4,7 @@ WORKDIR /backend
 
 COPY . .
 
-RUN pip install fastapi uvicorn redis  fastapi_limiter
+RUN pip install fastapi uvicorn redis
 
 EXPOSE 8000
 
