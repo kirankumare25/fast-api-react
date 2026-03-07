@@ -64,14 +64,13 @@ async def get_from_redis(id : int, cache : redis.Redis = Depends(get_redis_data)
 
 @app.get('/user/details')
 def user_details():
-
-    return users
+    return Response(content=json.dumps(users, indent=4), media_type="application/json")
 
 @app.get('/user/details/{user_id}')
 def user_details_id(user_id : int):
     for user in users:
         if user["id"] == user_id:
-            return user
+            return Response(content=json.dumps(user, indent=4), media_type="application/json")
         
     return {"message": f"{user_id} doesn't exist"}
 
@@ -79,7 +78,7 @@ def user_details_id(user_id : int):
 def search_user(name : str):
     for user in users:
         if user["first_name"].lower() == name.lower():
-            return user
+             return Response(content=json.dumps(user, indent=4), media_type="application/json")
     return {"message" : f"{name.capitalize()} has not found on database"} 
     
 @app.delete('/user/delete/{user_id}')
