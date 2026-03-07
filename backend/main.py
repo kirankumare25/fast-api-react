@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, Response
+from fastapi import FastAPI, Depends, Response, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_limiter.depends import RateLimiter
+import redis.asyncio as redis
 import uvicorn
 import json
 import os
-import redis.asyncio as redis
 
 
 
@@ -14,10 +15,27 @@ redis_pool = redis.ConnectionPool(host="redis", port=6379, db=0, decode_response
 
 async def get_redis_data():
     try:
-        client =redis.Redis(connection_pool=redis_pool)
+        client = redis.Redis(connection_pool=redis_pool)
         yield client
     finally:
         await client.close()
+
+
+async def custom_rate(
+    request: Request,
+    rlocal: redis.Redis = Depends(get_redis_data),
+):
+    client_ip = request.client.host
+    key = f"rate:{client_ip}"
+    current = await rlocal.get(key)
+
+    if current and int(current) >= 2:
+        raise HTTPException(status_code=429, detail="Too many requests")
+
+    pipe = rlocal.pipeline()
+    pipe.incr(key, 1)
+    pipe.expire(key, 5)
+    await pipe.execute()
 
 
 origins = ["*"]
@@ -45,11 +63,16 @@ with open(FILE, "r") as file:
 def home():
     return {"message": "Hellow from Fast API"}
 
+@app.get("/rate", dependencies=[Depends(custom_rate)])
+async def home():
+    return {"message": "ok"}
+
 @app.get("/getdetails")
 async def get_from_redis(id : int, cache : redis.Redis = Depends(get_redis_data)):
     cache_data = await cache.get(f"{id}")
     if cache_data:
         data = json.loads(cache_data)
+
         data["source"] = "from redis"
         jdata = json.dumps(data, indent=4)
         return Response(content=jdata, media_type="application/json")
