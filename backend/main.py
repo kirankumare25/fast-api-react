@@ -1,7 +1,10 @@
 from fastapi import FastAPI, Depends, Response, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi_limiter.depends import RateLimiter
 import redis.asyncio as redis
+from database import SessionLocal, engine, Base
+from typing import Annotated
+from sqlalchemy.orm import Session
+from sqlalchemy import Column, Integer, String
 import uvicorn
 import json
 import os
@@ -19,6 +22,30 @@ async def get_redis_data():
         yield client
     finally:
         await client.close()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+db_dependancy = Annotated[Session , Depends(get_db)]
+
+
+class MockData(Base):
+    __tablename__ = "customers"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(Integer, primary_key=True) 
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=False)
+    email = Column(String(50), nullable=False)
+    job_title = Column(String(50), nullable=False)
+    gender = Column(String(50), nullable=False)
+    ip_address = Column(String(50), nullable=False)
 
 
 async def custom_rate(
@@ -62,6 +89,13 @@ with open(FILE, "r") as file:
 @app.get('/')
 def home():
     return {"message": "Hellow from Fast API"}
+
+@app.get('/getdb')
+def get_db_data(db : db_dependancy):
+
+    data = db.query(MockData).all()
+
+    return data
 
 @app.get("/rate", dependencies=[Depends(custom_rate)])
 async def rate_limite_check():

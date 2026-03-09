@@ -4,7 +4,7 @@ WORKDIR /backend
 
 COPY . .
 
-RUN pip install fastapi uvicorn redis
+RUN pip install fastapi uvicorn redis sqlalchemy psycopg2-binary
 
 EXPOSE 8000
 
