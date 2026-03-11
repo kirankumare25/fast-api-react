@@ -13,8 +13,10 @@ function GetAllUsers() {
 
   return (
     <div className='GetAllUsers'>
-      
-      <button onClick={GetAll}>Get All Users</button>
+      <tr>
+        <td>GET</td>
+        <td><button onClick={GetAll}>/get all users</button></td>
+      </tr>
       
     </div>
   );
