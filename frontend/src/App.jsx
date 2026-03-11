@@ -55,14 +55,25 @@ function DelUsers() {
   }
 
   const handleNum = async () => {
-    if (inputValue){
-        const response = await axios.delete (`http://localhost:8000/user/delete/${inputValue}`)
-        alert("Item has deleted sucessfully")
 
-    }else {
-      alert("please enter the valid id")
+    if (!inputValue) {
+      alert("Enter valid User Id")
+      return
     }
-   
+
+    try {
+      const response = await axios.delete (`http://localhost:8000/user/delete/${inputValue}`)
+      alert(response.data.message)
+
+    }catch(error){
+      if (error.response){
+        alert(error.response.data.detail)
+      }else{
+        alert("Server is down")
+      }
+
+    };
+     
   }
   return (
     <div className='DelUser'>

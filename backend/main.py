@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Response, HTTPException, Request
+from fastapi import FastAPI, Depends, Response, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 import redis.asyncio as redis
 from database import SessionLocal, engine, Base
@@ -160,11 +160,11 @@ def delete_user(user_id : int, db : db_dependancy):
      user = db.query(MockData).filter(MockData.id == user_id).first()
 
      if not user:
-         return {"message": f"{user_id} doesn't exist"}
+         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{user_id} not found on database")
      
      db.delete(user)
      db.commit()
-     return {"message" : "user has deleted" }
+     return {"message" : f"{user.first_name} has deleted" }
           
 
 if __name__ == "__main__":
